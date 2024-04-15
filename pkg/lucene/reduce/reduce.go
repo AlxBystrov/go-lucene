@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/grindlemire/go-lucene/internal/lex"
-	"github.com/grindlemire/go-lucene/pkg/lucene/expr"
+	"github.com/AlxBystrov/go-lucene/internal/lex"
+	"github.com/AlxBystrov/go-lucene/pkg/lucene/expr"
 )
 
 // Reduce will reduce the elems and nonTerminals stacks using the available reducers and return

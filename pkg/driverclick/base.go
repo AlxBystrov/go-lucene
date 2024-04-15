@@ -1,10 +1,11 @@
-package driver
+package driverclick
 
 import (
 	"fmt"
+	// "strconv"
 	"strings"
 
-	"github.com/grindlemire/go-lucene/pkg/lucene/expr"
+	"github.com/AlxBystrov/go-lucene/pkg/lucene/expr"
 )
 
 // Shared is the shared set of render functions that can be used as a base and overriden
@@ -42,6 +43,16 @@ func (b Base) Render(e *expr.Expression) (s string, err error) {
 		return "", nil
 	}
 
+	// if b.isColumn(left) {
+	// 	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
+	// 		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+	// 	} else if _, err := strconv.ParseBool(right); err == nil {
+	// 		left = "bools.value[indexOf(bools.name, " + left + ")]"
+	// 	} else {
+	// 		left = "strings.value[indexOf(strings.name, " + left + ")]"
+	// 	}
+	// }
+
 	left, err := b.serialize(e.Left)
 	if err != nil {
 		return s, err
@@ -78,6 +89,15 @@ func (b Base) isSimple(in any) bool {
 	case nil:
 		return true
 	case string, int, float64:
+		return true
+	default:
+		return false
+	}
+}
+
+func (b Base) isColumn(in any) bool {
+	switch in.(type) {
+	case expr.Column:
 		return true
 	default:
 		return false
@@ -127,7 +147,8 @@ func (b Base) serialize(in any) (s string, err error) {
 		// Always escape column names with double quotes,
 		// otherwise we need to know the reserved words
 		// which might change in the future.
-		return fmt.Sprintf(`"%s"`, string(v)), nil
+		// For clickhouse fields must be in single quotes
+		return fmt.Sprintf(`'%s'`, string(v)), nil
 	case string:
 		// escape single quotes with double single quotes
 		return fmt.Sprintf("'%s'", strings.ReplaceAll(v, "'", "''")), nil

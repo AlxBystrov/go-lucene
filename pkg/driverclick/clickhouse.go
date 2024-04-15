@@ -1,14 +1,14 @@
-package driver
+package driverclick
 
-import "github.com/grindlemire/go-lucene/pkg/lucene/expr"
+import "github.com/AlxBystrov/go-lucene/pkg/lucene/expr"
 
 // PostgresDriver transforms a parsed lucene expression to a sql filter.
-type PostgresDriver struct {
+type ClickhouseDriver struct {
 	Base
 }
 
 // NewPostgresDriver creates a new driver that will output a parsed lucene expression as a SQL filter.
-func NewPostgresDriver() PostgresDriver {
+func NewClickhouseDriver() ClickhouseDriver {
 	fns := map[expr.Operator]RenderFN{
 		expr.Literal: literal,
 	}
@@ -20,7 +20,7 @@ func NewPostgresDriver() PostgresDriver {
 		}
 	}
 
-	return PostgresDriver{
+	return ClickhouseDriver{
 		Base{
 			RenderFNs: fns,
 		},

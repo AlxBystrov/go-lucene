@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/grindlemire/go-lucene/pkg/driver"
+	"github.com/AlxBystrov/go-lucene/pkg/driverclick"
 )
 
 func TestPostgresSQLEndToEnd(t *testing.T) {
@@ -240,7 +240,7 @@ func TestPostgresSQLEndToEnd(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			got, err := driver.NewPostgresDriver().Render(expr)
+			got, err := driverclick.NewClickhouseDriver().Render(expr)
 			if err != nil {
 				// if we got an expect error then we are fine
 				if tc.err != "" && strings.Contains(err.Error(), tc.err) {

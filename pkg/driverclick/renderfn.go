@@ -1,4 +1,4 @@
-package driver
+package driverclick
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/grindlemire/go-lucene/pkg/lucene/expr"
+	"github.com/AlxBystrov/go-lucene/pkg/lucene/expr"
 )
 
 // RenderFN is a rendering function. It takes the left and right side of the operator serialized to a string
@@ -20,11 +20,19 @@ func literal(left, right string) (string, error) {
 	if strings.ContainsRune(left, 0) {
 		return "", fmt.Errorf("literal contains null byte: %q", left)
 	}
-
 	return left, nil
 }
 
 func equals(left, right string) (string, error) {
+
+	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
+		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+	} else if _, err := strconv.ParseBool(right); err == nil {
+		left = "bools.value[indexOf(bools.name, " + left + ")]"
+	} else {
+		left = "strings.value[indexOf(strings.name, " + left + ")]"
+	}
+
 	return fmt.Sprintf("%s = %s", left, right), nil
 }
 
@@ -34,15 +42,22 @@ func noop(left, right string) (string, error) {
 
 func like(left, right string) (string, error) {
 	if len(right) >= 4 && right[1] == '/' && right[len(right)-2] == '/' {
-		return fmt.Sprintf("%s ~ %s", left, right), nil
+		return fmt.Sprintf("match(strings.value[indexOf(strings.name,%s),%s)", left, right), nil
 	}
 
 	right = strings.ReplaceAll(right, "*", "%")
 	right = strings.ReplaceAll(right, "?", "_")
-	return fmt.Sprintf("%s SIMILAR TO %s", left, right), nil
+	return fmt.Sprintf("strings.value[indexOf(strings.name,%s)] like %s", left, right), nil
 }
 
 func inFn(left, right string) (string, error) {
+	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
+		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+	} else if _, err := strconv.ParseBool(right); err == nil {
+		left = "bools.value[indexOf(bools.name, " + left + ")]"
+	} else {
+		left = "strings.value[indexOf(strings.name, " + left + ")]"
+	}
 	return fmt.Sprintf("%s IN %s", left, right), nil
 }
 
@@ -51,18 +66,38 @@ func list(left, right string) (string, error) {
 }
 
 func greater(left, right string) (string, error) {
+	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
+		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+	} else {
+		return "", nil
+	}
 	return fmt.Sprintf("%s > %s", left, right), nil
 }
 
 func less(left, right string) (string, error) {
+	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
+		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+	} else {
+		return "", nil
+	}
 	return fmt.Sprintf("%s < %s", left, right), nil
 }
 
 func greaterEq(left, right string) (string, error) {
+	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
+		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+	} else {
+		return "", nil
+	}
 	return fmt.Sprintf("%s >= %s", left, right), nil
 }
 
 func lessEq(left, right string) (string, error) {
+	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
+		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+	} else {
+		return "", nil
+	}
 	return fmt.Sprintf("%s <= %s", left, right), nil
 }
 
@@ -88,20 +123,20 @@ func rang(left, right string) (string, error) {
 	if err == nil {
 		if rawMin == "'*'" {
 			if inclusive {
-				return fmt.Sprintf("%s <= %d", left, iMax), nil
+				return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] <= %d", left, iMax), nil
 			}
-			return fmt.Sprintf("%s < %d", left, iMax), nil
+			return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] < %d", left, iMax), nil
 		}
 
 		if rawMax == "'*'" {
 			if inclusive {
-				return fmt.Sprintf("%s >= %d", left, iMin), nil
+				return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] >= %d", left, iMin), nil
 			}
-			return fmt.Sprintf("%s > %d", left, iMin), nil
+			return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] > %d", left, iMin), nil
 		}
 
 		if inclusive {
-			return fmt.Sprintf("%s >= %d AND %s <= %d",
+			return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] >= %d AND numbers.value[indexOf(numbers.name,%s)] <= %d",
 					left,
 					iMin,
 					left,
@@ -110,7 +145,7 @@ func rang(left, right string) (string, error) {
 				nil
 		}
 
-		return fmt.Sprintf("%s > %d AND %s < %d",
+		return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] > %d AND numbers.value[indexOf(numbers.name,%s)] < %d",
 				left,
 				iMin,
 				left,
@@ -123,20 +158,20 @@ func rang(left, right string) (string, error) {
 	if err == nil {
 		if rawMin == "'*'" {
 			if inclusive {
-				return fmt.Sprintf("%s <= %.2f", left, fMax), nil
+				return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] <= %.2f", left, fMax), nil
 			}
-			return fmt.Sprintf("%s < %.2f", left, fMax), nil
+			return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] < %.2f", left, fMax), nil
 		}
 
 		if rawMax == "'*'" {
 			if inclusive {
-				return fmt.Sprintf("%s >= %.2f", left, fMin), nil
+				return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] >= %.2f", left, fMin), nil
 			}
-			return fmt.Sprintf("%s > %.2f", left, fMin), nil
+			return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] > %.2f", left, fMin), nil
 		}
 
 		if inclusive {
-			return fmt.Sprintf("%s >= %.2f AND %s <= %.2f",
+			return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] >= %.2f AND numbers.value[indexOf(numbers.name,%s)] <= %.2f",
 					left,
 					fMin,
 					left,
@@ -145,7 +180,7 @@ func rang(left, right string) (string, error) {
 				nil
 		}
 
-		return fmt.Sprintf("%s > %.2f AND %s < %.2f",
+		return fmt.Sprintf("numbers.value[indexOf(numbers.name,%s)] > %.2f AND numbers.value[indexOf(numbers.name,%s)] < %.2f",
 				left,
 				fMin,
 				left,
@@ -154,7 +189,7 @@ func rang(left, right string) (string, error) {
 			nil
 	}
 
-	return fmt.Sprintf(`%s BETWEEN %s AND %s`,
+	return fmt.Sprintf(`numbers.value[indexOf(numbers.name,%s)] BETWEEN %s AND %s`,
 			left,
 			strings.Trim(rangeSlice[0], " "),
 			strings.Trim(rangeSlice[1], " "),

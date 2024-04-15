@@ -1,4 +1,4 @@
-module github.com/grindlemire/go-lucene
+module github.com/AlxBystrov/go-lucene
 
 go 1.18
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/grindlemire/go-lucene"
-	"github.com/grindlemire/go-lucene/pkg/driver"
-	"github.com/grindlemire/go-lucene/pkg/lucene/expr"
+	"github.com/AlxBystrov/go-lucene"
+	"github.com/AlxBystrov/go-lucene/pkg/driverclick"
+	"github.com/AlxBystrov/go-lucene/pkg/lucene/expr"
 )
 
 func main() {
@@ -40,7 +40,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	sq, err := driver.NewPostgresDriver().Render(e)
+	sq, err := driverclick.NewClickhouseDriver().Render(e)
 	if err != nil {
 		fmt.Printf("Error rendering sql: %s\n", err)
 		os.Exit(1)

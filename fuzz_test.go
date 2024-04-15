@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/grindlemire/go-lucene/pkg/driver"
+	"github.com/AlxBystrov/go-lucene/pkg/driverclick"
 	pg_query "github.com/pganalyze/pg_query_go/v4"
 )
 
@@ -33,7 +33,7 @@ func FuzzPostgresDriver(f *testing.F) {
 			return
 		}
 
-		f, err := driver.NewPostgresDriver().Render(e)
+		f, err := driverclick.NewClickhouseDriver().Render(e)
 		if err != nil {
 			// Ignore errors that are expected.
 			if strings.Contains(err.Error(), "unable to render operator") ||
