@@ -42,7 +42,7 @@ func noop(left, right string) (string, error) {
 
 func like(left, right string) (string, error) {
 	if len(right) >= 4 && right[1] == '/' && right[len(right)-2] == '/' {
-		return fmt.Sprintf("match(strings.value[indexOf(strings.name,%s),%s)", left, right), nil
+		return fmt.Sprintf("match(strings.value[indexOf(strings.name,%s)],%s)", left, right), nil
 	}
 
 	right = strings.ReplaceAll(right, "*", "%")
