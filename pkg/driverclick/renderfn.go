@@ -26,11 +26,11 @@ func literal(left, right string) (string, error) {
 func equals(left, right string) (string, error) {
 
 	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
-		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+		left = "numbers.value[indexOf(numbers.name," + left + ")]"
 	} else if _, err := strconv.ParseBool(right); err == nil {
-		left = "bools.value[indexOf(bools.name, " + left + ")]"
+		left = "bools.value[indexOf(bools.name," + left + ")]"
 	} else {
-		left = "strings.value[indexOf(strings.name, " + left + ")]"
+		left = "strings.value[indexOf(strings.name," + left + ")]"
 	}
 
 	return fmt.Sprintf("%s = %s", left, right), nil
@@ -42,6 +42,8 @@ func noop(left, right string) (string, error) {
 
 func like(left, right string) (string, error) {
 	if len(right) >= 4 && right[1] == '/' && right[len(right)-2] == '/' {
+		right = strings.Replace(right, "'/", "'", 1)
+		right = strings.Replace(right, "/'", "'", 1)
 		return fmt.Sprintf("match(strings.value[indexOf(strings.name,%s)],%s)", left, right), nil
 	}
 
@@ -52,11 +54,11 @@ func like(left, right string) (string, error) {
 
 func inFn(left, right string) (string, error) {
 	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
-		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+		left = "numbers.value[indexOf(numbers.name," + left + ")]"
 	} else if _, err := strconv.ParseBool(right); err == nil {
-		left = "bools.value[indexOf(bools.name, " + left + ")]"
+		left = "bools.value[indexOf(bools.name," + left + ")]"
 	} else {
-		left = "strings.value[indexOf(strings.name, " + left + ")]"
+		left = "strings.value[indexOf(strings.name," + left + ")]"
 	}
 	return fmt.Sprintf("%s IN %s", left, right), nil
 }
@@ -67,7 +69,7 @@ func list(left, right string) (string, error) {
 
 func greater(left, right string) (string, error) {
 	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
-		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+		left = "numbers.value[indexOf(numbers.name," + left + ")]"
 	} else {
 		return "", nil
 	}
@@ -76,7 +78,7 @@ func greater(left, right string) (string, error) {
 
 func less(left, right string) (string, error) {
 	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
-		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+		left = "numbers.value[indexOf(numbers.name," + left + ")]"
 	} else {
 		return "", nil
 	}
@@ -85,7 +87,7 @@ func less(left, right string) (string, error) {
 
 func greaterEq(left, right string) (string, error) {
 	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
-		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+		left = "numbers.value[indexOf(numbers.name," + left + ")]"
 	} else {
 		return "", nil
 	}
@@ -94,7 +96,7 @@ func greaterEq(left, right string) (string, error) {
 
 func lessEq(left, right string) (string, error) {
 	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
-		left = "numbers.value[indexOf(numbers.name, " + left + ")]"
+		left = "numbers.value[indexOf(numbers.name," + left + ")]"
 	} else {
 		return "", nil
 	}
@@ -189,7 +191,7 @@ func rang(left, right string) (string, error) {
 			nil
 	}
 
-	return fmt.Sprintf(`numbers.value[indexOf(numbers.name,%s)] BETWEEN %s AND %s`,
+	return fmt.Sprintf(`strings.value[indexOf(strings.name,%s)] BETWEEN %s AND %s`,
 			left,
 			strings.Trim(rangeSlice[0], " "),
 			strings.Trim(rangeSlice[1], " "),
