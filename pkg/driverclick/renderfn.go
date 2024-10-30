@@ -25,7 +25,9 @@ func literal(left, right string) (string, error) {
 
 func equals(left, right string) (string, error) {
 
-	if _, err := strconv.ParseInt(right, 0, 64); err == nil {
+	if left == "'_source'" {
+		return fmt.Sprintf("match(_source, %s)", right), nil
+	} else if _, err := strconv.ParseInt(right, 0, 64); err == nil {
 		left = "numbers.value[indexOf(numbers.name," + left + ")]"
 	} else if _, err := strconv.ParseBool(right); err == nil {
 		left = "bools.value[indexOf(bools.name," + left + ")]"
