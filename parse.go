@@ -67,6 +67,11 @@ func (p *parser) parse() (e *expr.Expression, err error) {
 					reflect.TypeOf(final),
 				)
 			}
+
+			if final.Op == expr.Literal && p.defaultField != "" {
+				final = expr.Expr(p.defaultField, expr.Equals, final.Left)
+			}
+
 			return final, nil
 		}
 
