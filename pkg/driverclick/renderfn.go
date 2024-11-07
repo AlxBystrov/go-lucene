@@ -26,13 +26,13 @@ func literal(left, right string) (string, error) {
 func equals(left, right string) (string, error) {
 
 	if left == "'_source'" {
-		return fmt.Sprintf("match(_source, %s)", right), nil
+		return fmt.Sprintf("match(lowerUTF8(_source), lowerUTF8(%s))", right), nil
 	} else if _, err := strconv.ParseInt(right, 0, 64); err == nil {
 		left = "numbers.value[indexOf(numbers.name," + left + ")]"
 	} else if _, err := strconv.ParseBool(right); err == nil {
 		left = "bools.value[indexOf(bools.name," + left + ")]"
 	} else {
-		left = "strings.value[indexOf(strings.name," + left + ")]"
+		left = "lowerUTF8(strings.value[indexOf(strings.name," + left + ")])"
 	}
 
 	return fmt.Sprintf("%s = %s", left, right), nil
@@ -46,12 +46,12 @@ func like(left, right string) (string, error) {
 	if len(right) >= 4 && right[1] == '/' && right[len(right)-2] == '/' {
 		right = strings.Replace(right, "'/", "'", 1)
 		right = strings.Replace(right, "/'", "'", 1)
-		return fmt.Sprintf("match(strings.value[indexOf(strings.name,%s)],%s)", left, right), nil
+		return fmt.Sprintf("match(lowerUTF8(strings.value[indexOf(strings.name,%s)]),lowerUTF8(%s))", left, right), nil
 	}
 
 	right = strings.ReplaceAll(right, "*", "%")
 	right = strings.ReplaceAll(right, "?", "_")
-	return fmt.Sprintf("strings.value[indexOf(strings.name,%s)] like %s", left, right), nil
+	return fmt.Sprintf("lowerUTF8(strings.value[indexOf(strings.name,%s)]) like lowerUTF8(%s)", left, right), nil
 }
 
 func inFn(left, right string) (string, error) {
