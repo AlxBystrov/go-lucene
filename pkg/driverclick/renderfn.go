@@ -35,7 +35,7 @@ func equals(left, right string) (string, error) {
 		left = "lowerUTF8(strings.value[indexOf(strings.name," + left + ")])"
 	}
 
-	return fmt.Sprintf("%s = %s", left, right), nil
+	return fmt.Sprintf("%s = lowerUTF8(%s)", left, right), nil
 }
 
 func noop(left, right string) (string, error) {
