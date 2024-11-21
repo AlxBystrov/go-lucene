@@ -26,6 +26,9 @@ func literal(left, right string) (string, error) {
 func equals(left, right string) (string, error) {
 
 	if left == "'_source'" {
+		if strings.HasPrefix(right, '\'') && strings.HasSuffix(right, '\'') {
+			return fmt.Sprintf("match(lowerUTF8(_source), lowerUTF8(%s))", right), nil
+		}
 		return fmt.Sprintf("match(lowerUTF8(_source), lowerUTF8('%s'))", right), nil
 	} else if _, err := strconv.ParseInt(right, 0, 64); err == nil {
 		left = "numbers.value[indexOf(numbers.name," + left + ")]"
