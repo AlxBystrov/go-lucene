@@ -32,14 +32,14 @@ func equals(left, right string) (string, error) {
 		return fmt.Sprintf("match(lowerUTF8(_source), lowerUTF8('%s'))", right), nil
 	} else if _, err := strconv.ParseInt(right, 0, 64); err == nil {
 		left = "numbers.value[indexOf(numbers.name," + left + ")]"
+		return fmt.Sprintf("%s = %s", left, right), nil
 	} else if _, err := strconv.ParseBool(right); err == nil {
 		left = "bools.value[indexOf(bools.name," + left + ")]"
+		return fmt.Sprintf("%s = %s", left, right), nil
 	} else {
 		left = "lowerUTF8(strings.value[indexOf(strings.name," + left + ")])"
-		return fmt.Sprintf("%s = lowerUTF8(%s)", left, right), nil
+		return fmt.Sprintf("match(lowerUTF8(%s), lowerUTF8(%s))", left, right), nil
 	}
-
-	return fmt.Sprintf("%s = %s", left, right), nil
 }
 
 func noop(left, right string) (string, error) {
