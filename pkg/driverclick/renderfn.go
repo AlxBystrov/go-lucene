@@ -23,11 +23,22 @@ func literal(left, right string) (string, error) {
 	return left, nil
 }
 
+func reverse(s string) (result string) {
+	for _, v := range s {
+		result = string(v) + result
+	}
+	return
+}
+
 func equals(left, right string) (string, error) {
 
 	if left == "'_source'" {
 		if strings.HasPrefix(right, "'") && strings.HasSuffix(right, "'") {
-			return fmt.Sprintf("lowerUTF8(_source) like lowerUTF8(%%%s%%)", right), nil
+			// magic for converting into 'some text' -> '%some text%' for propper searching with like
+			right = strings.Replace(right, "'", "'%", 1)
+			right = reverse(strings.Replace(reverse(right), "'", "'%", 1))
+
+			return fmt.Sprintf(`lowerUTF8(_source) like lowerUTF8(%s)`, right), nil
 		}
 		return fmt.Sprintf("lowerUTF8(_source) like lowerUTF8('%%%s%%')", right), nil
 	} else if _, err := strconv.ParseInt(right, 0, 64); err == nil {
@@ -38,7 +49,10 @@ func equals(left, right string) (string, error) {
 		return fmt.Sprintf("%s = %s", left, right), nil
 	} else {
 		left = "lowerUTF8(strings.value[indexOf(strings.name," + left + ")])"
-		return fmt.Sprintf("%s like lowerUTF8(%%%s%%)", left, right), nil
+		// magic for converting into 'some text' -> '%some text%' for propper searching with like
+		right = strings.Replace(right, "'", "'%", 1)
+		right = reverse(strings.Replace(reverse(right), "'", "'%", 1))
+		return fmt.Sprintf("%s like lowerUTF8(%s)", left, right), nil
 	}
 }
 
@@ -50,12 +64,17 @@ func like(left, right string) (string, error) {
 	if len(right) >= 4 && right[1] == '/' && right[len(right)-2] == '/' {
 		right = strings.Replace(right, "'/", "'", 1)
 		right = strings.Replace(right, "/'", "'", 1)
+
+		if left == "'_source'" {
+			left = strings.Replace(left, "'", "", -1)
+			return fmt.Sprintf("match(lowerUTF8(%s),lowerUTF8(%s))", left, right), nil
+		}
 		return fmt.Sprintf("match(lowerUTF8(strings.value[indexOf(strings.name,%s)]),lowerUTF8(%s))", left, right), nil
 	}
 
 	right = strings.ReplaceAll(right, "*", "%")
 	right = strings.ReplaceAll(right, "?", "_")
-	return fmt.Sprintf("lowerUTF8(strings.value[indexOf(strings.name,%s)]) like lowerUTF8(%%%s%%)", left, right), nil
+	return fmt.Sprintf("lowerUTF8(strings.value[indexOf(strings.name,%s)]) like lowerUTF8(%s)", left, right), nil
 }
 
 func inFn(left, right string) (string, error) {
