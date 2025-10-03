@@ -23,20 +23,14 @@ func literal(left, right string) (string, error) {
 	return left, nil
 }
 
-func reverse(s string) (result string) {
-	for _, v := range s {
-		result = string(v) + result
-	}
-	return
-}
-
 func equals(left, right string) (string, error) {
 
 	if left == "'_source'" {
 		if strings.HasPrefix(right, "'") && strings.HasSuffix(right, "'") {
 			// magic for converting into 'some text' -> '%some text%' for propper searching with like
-			right = strings.Replace(right, "'", "'%", 1)
-			right = reverse(strings.Replace(reverse(right), "'", "'%", 1))
+			if len(right) > 1 && right[0] == '\'' && right[len(right)-1] == '\'' {
+				right = "'%" + right[1:len(right)-1] + "%'"
+			}
 
 			return fmt.Sprintf(`lowerUTF8(_source) like lowerUTF8(%s)`, right), nil
 		}
@@ -48,11 +42,14 @@ func equals(left, right string) (string, error) {
 		left = "bools.value[indexOf(bools.name," + left + ")]"
 		return fmt.Sprintf("%s = %s", left, right), nil
 	} else {
-		left = "lowerUTF8(strings.value[indexOf(strings.name," + left + ")])"
+		if right == "''" {
+			return fmt.Sprintf("strings.value[indexOf(strings.name,%v)] = ''", left), nil
+		}
 		// magic for converting into 'some text' -> '%some text%' for propper searching with like
-		right = strings.Replace(right, "'", "'%", 1)
-		right = reverse(strings.Replace(reverse(right), "'", "'%", 1))
-		return fmt.Sprintf("%s like lowerUTF8(%s)", left, right), nil
+		if len(right) > 2 && right[0] == '\'' && right[len(right)-1] == '\'' {
+			right = "'%" + right[1:len(right)-1] + "%'"
+		}
+		return fmt.Sprintf("lowerUTF8(strings.value[indexOf(strings.name,%s)]) like lowerUTF8(%s)", left, right), nil
 	}
 }
 
