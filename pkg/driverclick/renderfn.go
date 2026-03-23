@@ -37,7 +37,7 @@ func equals(b Base, left, right string) (string, error) {
 	}
 
 	fieldType := inferFieldType(right)
-	fieldExpr, fieldType, err := b.resolveFieldExpr(left, fieldType)
+	fieldExpr, fieldType, storage, err := b.resolveFieldExpr(left, fieldType)
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +53,7 @@ func equals(b Base, left, right string) (string, error) {
 		if len(right) > 2 && right[0] == '\'' && right[len(right)-1] == '\'' {
 			right = "'%" + right[1:len(right)-1] + "%'"
 		}
-		return fmt.Sprintf("lowerUTF8(%s) like lowerUTF8(%s)", fieldExpr, right), nil
+		return fmt.Sprintf("%s like lowerUTF8(%s)", lowerFieldExpr(fieldExpr, storage), right), nil
 	}
 }
 
@@ -62,7 +62,7 @@ func noop(b Base, left, right string) (string, error) {
 }
 
 func like(b Base, left, right string) (string, error) {
-	fieldExpr, _, err := b.resolveFieldExpr(left, StringField)
+	fieldExpr, _, storage, err := b.resolveFieldExpr(left, StringField)
 	if err != nil {
 		return "", err
 	}
@@ -75,16 +75,16 @@ func like(b Base, left, right string) (string, error) {
 			left = strings.Replace(left, "'", "", -1)
 			return fmt.Sprintf("match(lowerUTF8(%s),lowerUTF8(%s))", left, right), nil
 		}
-		return fmt.Sprintf("match(lowerUTF8(%s),lowerUTF8(%s))", fieldExpr, right), nil
+		return fmt.Sprintf("match(%s,lowerUTF8(%s))", lowerFieldExpr(fieldExpr, storage), right), nil
 	}
 
 	right = strings.ReplaceAll(right, "*", "%")
 	right = strings.ReplaceAll(right, "?", "_")
-	return fmt.Sprintf("lowerUTF8(%s) like lowerUTF8(%s)", fieldExpr, right), nil
+	return fmt.Sprintf("%s like lowerUTF8(%s)", lowerFieldExpr(fieldExpr, storage), right), nil
 }
 
 func inFn(b Base, left, right string) (string, error) {
-	fieldExpr, _, err := b.resolveFieldExpr(left, StringField)
+	fieldExpr, _, _, err := b.resolveFieldExpr(left, StringField)
 	if err != nil {
 		return "", err
 	}
@@ -99,7 +99,7 @@ func greater(b Base, left, right string) (string, error) {
 	if _, err := strconv.ParseInt(right, 0, 64); err != nil {
 		return "", nil
 	}
-	fieldExpr, _, err := b.resolveFieldExpr(left, NumberField)
+	fieldExpr, _, _, err := b.resolveFieldExpr(left, NumberField)
 	if err != nil {
 		return "", err
 	}
@@ -110,7 +110,7 @@ func less(b Base, left, right string) (string, error) {
 	if _, err := strconv.ParseInt(right, 0, 64); err != nil {
 		return "", nil
 	}
-	fieldExpr, _, err := b.resolveFieldExpr(left, NumberField)
+	fieldExpr, _, _, err := b.resolveFieldExpr(left, NumberField)
 	if err != nil {
 		return "", err
 	}
@@ -121,7 +121,7 @@ func greaterEq(b Base, left, right string) (string, error) {
 	if _, err := strconv.ParseInt(right, 0, 64); err != nil {
 		return "", nil
 	}
-	fieldExpr, _, err := b.resolveFieldExpr(left, NumberField)
+	fieldExpr, _, _, err := b.resolveFieldExpr(left, NumberField)
 	if err != nil {
 		return "", err
 	}
@@ -132,7 +132,7 @@ func lessEq(b Base, left, right string) (string, error) {
 	if _, err := strconv.ParseInt(right, 0, 64); err != nil {
 		return "", nil
 	}
-	fieldExpr, _, err := b.resolveFieldExpr(left, NumberField)
+	fieldExpr, _, _, err := b.resolveFieldExpr(left, NumberField)
 	if err != nil {
 		return "", err
 	}
@@ -159,7 +159,7 @@ func rang(b Base, left, right string) (string, error) {
 
 	iMin, iMax, err := toInts(rawMin, rawMax)
 	if err == nil {
-		fieldExpr, _, err := b.resolveFieldExpr(left, NumberField)
+		fieldExpr, _, _, err := b.resolveFieldExpr(left, NumberField)
 		if err != nil {
 			return "", err
 		}
@@ -187,7 +187,7 @@ func rang(b Base, left, right string) (string, error) {
 
 	fMin, fMax, err := toFloats(rawMin, rawMax)
 	if err == nil {
-		fieldExpr, _, err := b.resolveFieldExpr(left, NumberField)
+		fieldExpr, _, _, err := b.resolveFieldExpr(left, NumberField)
 		if err != nil {
 			return "", err
 		}
@@ -213,7 +213,7 @@ func rang(b Base, left, right string) (string, error) {
 		return fmt.Sprintf("%s > %.2f AND %s < %.2f", fieldExpr, fMin, fieldExpr, fMax), nil
 	}
 
-	fieldExpr, _, err := b.resolveFieldExpr(left, StringField)
+	fieldExpr, _, _, err := b.resolveFieldExpr(left, StringField)
 	if err != nil {
 		return "", err
 	}
@@ -243,14 +243,14 @@ func inferFieldType(right string) FieldType {
 	return StringField
 }
 
-func (b Base) resolveFieldExpr(left string, fallbackType FieldType) (string, FieldType, error) {
+func (b Base) resolveFieldExpr(left string, fallbackType FieldType) (string, FieldType, StorageKind, error) {
 	fieldName, err := unquoteSQLString(left)
 	if err != nil {
-		return "", fallbackType, err
+		return "", fallbackType, "", err
 	}
 
 	if fieldName == "_source" {
-		return "_source", StringField, nil
+		return "_source", StringField, "", nil
 	}
 
 	if binding, ok := b.FieldBindings[fieldName]; ok {
@@ -261,14 +261,21 @@ func (b Base) resolveFieldExpr(left string, fallbackType FieldType) (string, Fie
 		if binding.Storage == MaterializedColumn {
 			columnExpr, err := quoteIdentifier(columnName)
 			if err != nil {
-				return "", binding.Type, err
+				return "", binding.Type, binding.Storage, err
 			}
-			return columnExpr, binding.Type, nil
+			return columnExpr, binding.Type, binding.Storage, nil
 		}
-		return arrayExpr(fieldName, binding.Type), binding.Type, nil
+		return arrayExpr(fieldName, binding.Type), binding.Type, binding.Storage, nil
 	}
 
-	return arrayExpr(fieldName, fallbackType), fallbackType, nil
+	return arrayExpr(fieldName, fallbackType), fallbackType, ArrayKVStorage, nil
+}
+
+func lowerFieldExpr(fieldExpr string, storage StorageKind) string {
+	if storage == MaterializedColumn {
+		return fieldExpr
+	}
+	return fmt.Sprintf("lowerUTF8(%s)", fieldExpr)
 }
 
 func arrayExpr(fieldName string, fieldType FieldType) string {

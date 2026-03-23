@@ -290,7 +290,7 @@ func TestClickhouseDriverFieldBindings(t *testing.T) {
 	tcs := map[string]tc{
 		"materialized_string_field": {
 			input: "msg:445a2c13-ba5c-4c0d-a577-6eb879f5ebcf",
-			want:  "lowerUTF8(msg) like lowerUTF8('%445a2c13-ba5c-4c0d-a577-6eb879f5ebcf%')",
+			want:  "msg like lowerUTF8('%445a2c13-ba5c-4c0d-a577-6eb879f5ebcf%')",
 		},
 		"materialized_number_field": {
 			input: "latency_ms:>100",
@@ -298,7 +298,7 @@ func TestClickhouseDriverFieldBindings(t *testing.T) {
 		},
 		"materialized_alias_column": {
 			input: "message:/req-resp mode/",
-			want:  "match(lowerUTF8(message_text),lowerUTF8('req-resp mode'))",
+			want:  "match(message_text,lowerUTF8('req-resp mode'))",
 		},
 		"fallback_to_array_storage": {
 			input: "pod:my-pod",
@@ -306,7 +306,7 @@ func TestClickhouseDriverFieldBindings(t *testing.T) {
 		},
 		"mixed_materialized_fields": {
 			input: `msg:"search string" and pod:"my-pod"`,
-			want:  "(lowerUTF8(msg) like lowerUTF8('%search string%')) AND (lowerUTF8(strings.value[indexOf(strings.name,'pod')]) like lowerUTF8('%my-pod%'))",
+			want:  "(msg like lowerUTF8('%search string%')) AND (lowerUTF8(strings.value[indexOf(strings.name,'pod')]) like lowerUTF8('%my-pod%'))",
 		},
 	}
 
